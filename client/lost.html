@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Search Lost Item</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h2>🔍 Search Lost Item</h2>
+    <form id="lostForm">
+      <!-- ✅ Changed from dropdown to manual input -->
+      <label>Item Type:</label>
+      <input type="text" id="itemType" placeholder="e.g. Watch" required />
+
+      <label>Item Color:</label>
+      <input type="text" id="color" required />
+
+      <label>Lost Location:</label>
+      <input type="text" id="location" required />
+
+      <button type="submit" class="btn">Search</button>
+    </form>
+
+    <div id="resultContainer" style="margin-top: 20px;"></div>
+  </div>
+
+  <script>
+    document.getElementById("lostForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const itemType = document.getElementById("itemType").value.trim().toLowerCase();
+      const color = document.getElementById("color").value.trim().toLowerCase();
+      const location = document.getElementById("location").value.trim().toLowerCase();
+      const resultContainer = document.getElementById("resultContainer");
+
+      resultContainer.innerHTML = "";
+
+      try {
+        const response = await fetch("http://localhost:5000/api/items/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ itemType, color, location })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && Array.isArray(data) && data.length > 0) {
+          resultContainer.innerHTML = `<h3>✅ ${data.length} Match(es) Found</h3>`;
+
+          data.forEach(item => {
+            const card = document.createElement("div");
+            card.style = `
+              display: flex;
+              gap: 20px;
+              align-items: flex-start;
+              background-color: #f9f9f9;
+              border: 1px solid #ccc;
+              padding: 15px;
+              border-radius: 10px;
+              margin-bottom: 20px;
+              box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            `;
+
+            const imgHTML = item.photo
+              ? `<img src="http://localhost:5000/uploads/${item.photo}" 
+                        alt="Item Photo"
+                        style="width: 120px; height: 120px; object-fit: cover; border-radius: 10px; border: 1px solid #aaa;" />`
+              : "";
+
+            const infoHTML = `
+              <div>
+                <p><strong>Item:</strong> ${item.itemType}</p>
+                <p><strong>Color:</strong> ${item.color}</p>
+                <p><strong>Location:</strong> ${item.location}</p>
+                <p><strong>Date:</strong> ${item.date ? item.date.substring(0, 10) : "N/A"}</p>
+                <p><strong>Description:</strong> ${item.description || "None"}</p>
+                <p><strong>Contact Name:</strong> ${item.contactName}</p>
+                <p><strong>Contact Phone:</strong> ${item.contactPhone}</p>
+                <button onclick="confirmItem('${item._id}')" style="
+                    margin-top: 10px;
+                    background-color: #28a745;
+                    color: white;
+                    padding: 5px 10px;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                ">✅ Confirm this is mine</button>
+              </div>
+            `;
+
+            card.innerHTML = imgHTML + infoHTML;
+            resultContainer.appendChild(card);
+          });
+        } else {
+          resultContainer.innerHTML = `
+            <div style="
+              background-color: #f8d7da;
+              border: 1px solid #dc3545;
+              color: #721c24;
+              padding: 10px;
+              border-radius: 10px;
+              margin-top: 20px;
+            ">
+              ❌ No matching items found.
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        resultContainer.innerHTML = `
+          <div style="
+            background-color: #f8d7da;
+            border: 1px solid #dc3545;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 10px;
+            margin-top: 20px;
+          ">
+            ❌ Server error. Please try again later.
+          </div>
+        `;
+      }
+    });
+
+    async function confirmItem(itemId) {
+      const confirmAction = confirm("Are you sure this item is yours? It will be removed from the list.");
+      if (!confirmAction) return;
+
+      try {
+        const res = await fetch(`http://localhost:5000/api/items/confirm/${itemId}`, {
+          method: "POST"
+        });
+
+        const result = await res.json();
+        if (res.ok) {
+          alert("✅ Item confirmed and removed!");
+          // Re-run the search to refresh results
+          document.getElementById("lostForm").dispatchEvent(new Event('submit'));
+        } else {
+          alert("❌ Error: " + result.message);
+        }
+      } catch (error) {
+        console.error(error);
+        alert("❌ Server error while confirming.");
+      }
+    }
+  </script>
+</body>
+</html>

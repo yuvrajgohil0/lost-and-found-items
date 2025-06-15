@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Report Found Item</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h2>📦 Report Found Item</h2>
+    <form id="foundForm" enctype="multipart/form-data">
+      <!-- ✅ Changed from dropdown to text input -->
+      <label>Item Type:</label>
+      <input type="text" id="itemType" name="itemType" placeholder="e.g. watch, earbuds" required />
+
+      <label>Color:</label>
+      <input type="text" id="color" name="color" required />
+
+      <label>Location Found:</label>
+      <input type="text" id="location" name="location" required />
+
+      <label>Date Found:</label>
+      <input type="date" id="date" name="date" required />
+
+      <label>Description (optional):</label>
+      <textarea id="description" name="description" rows="3"></textarea>
+
+      <label>Contact Name:</label>
+      <input type="text" id="contactName" name="contactName" required />
+
+      <label>Contact Phone:</label>
+      <input type="text" id="contactPhone" name="contactPhone" required />
+
+      <label>Upload Photo:</label>
+      <input type="file" id="photo" name="photo" accept="image/*" required />
+
+      <button type="submit" class="btn">Submit Found Item</button>
+    </form>
+
+    <div id="resultMessage" style="margin-top: 20px;"></div>
+  </div>
+
+  <script>
+    document.getElementById("foundForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const form = document.getElementById("foundForm");
+      const formData = new FormData(form);
+      formData.append("isLost", "false"); // Mark this item as found
+
+      const resultMessage = document.getElementById("resultMessage");
+      resultMessage.innerHTML = ""; // Clear previous message
+
+      try {
+        const response = await fetch("http://localhost:5000/api/items/add", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          resultMessage.innerHTML = `
+            <div style="
+              background-color: #d4edda;
+              border: 1px solid #28a745;
+              color: #155724;
+              padding: 15px;
+              border-radius: 10px;
+              margin-top: 20px;
+            ">
+              ✅ Found item submitted successfully!
+            </div>
+          `;
+          form.reset(); // Clear form after successful submit
+        } else {
+          resultMessage.innerHTML = `
+            <div style="
+              background-color: #f8d7da;
+              border: 1px solid #dc3545;
+              color: #721c24;
+              padding: 10px;
+              border-radius: 10px;
+              margin-top: 20px;
+            ">
+              ❌ ${data.error || "Failed to submit found item."}
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.error("Error:", error);
+        resultMessage.innerHTML = `
+          <div style="
+            background-color: #f8d7da;
+            border: 1px solid #dc3545;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 10px;
+            margin-top: 20px;
+          ">
+            ❌ Server error. Please try again later.
+          </div>
+        `;
+      }
+    });
+  </script>
+</body>
+</html>

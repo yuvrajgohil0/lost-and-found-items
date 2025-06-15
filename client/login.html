@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="container">
+    <h2>🔐 User Login</h2>
+    <form id="loginForm">
+      <label>Email:</label>
+      <input type="email" id="email" required />
+
+      <label>Password:</label>
+      <input type="password" id="password" required />
+
+      <button type="submit" class="btn">Login</button>
+    </form>
+    <p>Don't have an account? <a href="register.html">Register</a></p>
+    <div id="msg"></div>
+  </div>
+
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+      
+      const email = document.getElementById("email").value.trim().toLowerCase();
+      const password = document.getElementById("password").value;
+      const msg = document.getElementById("msg");
+
+      try {
+        const res = await fetch("http://localhost:5000/api/users/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.token) {
+          localStorage.setItem("token", data.token);
+          localStorage.setItem("userRole", data.role);
+          localStorage.setItem("userName", data.name);
+
+          msg.innerHTML = `<p style="color:green;">✅ Login successful</p>`;
+
+          setTimeout(() => {
+            if (data.role === "admin") {
+              window.location.href = "admin.html";
+            } else {
+              window.location.href = "index.html";
+            }
+          }, 1000);
+        } else {
+          msg.innerHTML = `<p style="color:red;">❌ ${data.message || "Login failed"}</p>`;
+        }
+      } catch (err) {
+        msg.innerHTML = `<p style="color:red;">❌ Server error. Try again.</p>`;
+        console.error(err);
+      }
+    });
+  </script>
+</body>
+</html>
